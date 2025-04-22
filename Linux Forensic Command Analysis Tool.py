@@ -3,7 +3,8 @@ import subprocess
 import re
 import json
 from collections import Counter
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 # Configurable paths and settings
 HISTORY_FILES = [os.path.expanduser("~/.bash_history"), os.path.expanduser("~/.zsh_history")]
@@ -123,26 +124,75 @@ def normalize_and_count(commands):
 #-------------------------- visualize_command_usage -------------------------
 #  Function visualize_command_usage
 #
-#  Purpose:  Creates a bar chart of command usage frequencies from a Counter.
-#      Displays and saves the plot as an image.
+#  Purpose:  Creates an interactive bar chart of command usage frequencies using
+#      Plotly, with dropdown-based filtering for top 10, 25, or all commands.
 #
 #  Parameters:
 #      counter (IN) -- A Counter object containing command frequencies.
 #
-#  Returns:  None (Outputs plot as image file and shows the plot visually.)
+#  Returns:  None (Displays interactive chart in browser and saves as HTML.)
 #----------------------------------------------------------------------------
 def visualize_command_usage(counter):
-    sorted_items = counter.most_common()
-    commands, counts = zip(*sorted_items)
-    plt.figure(figsize=(12, 6))
-    plt.bar(commands, counts, color='skyblue')
-    plt.title("Command Usage Frequency")
-    plt.xlabel("Command")
-    plt.ylabel("Frequency")
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.savefig("command_usage.png")
-    plt.show()
+    data = counter.most_common()
+    if not data:
+        print("No data to visualize.")
+        return
+
+    # Prepare all filter levels
+    filters = {
+        "Top 10": data[:10],
+        "Top 25": data[:25],
+        "All": data
+    }
+
+    # Create traces for each filter level
+    traces = []
+    visibility = []
+    buttons = []
+
+    for i, (label, subset) in enumerate(filters.items()):
+        cmds, freqs = zip(*subset)
+        trace = go.Bar(
+            x=cmds,
+            y=freqs,
+            name=label,
+            marker_color='lightskyblue',
+            hovertemplate='%{x}<br>Frequency: %{y}<extra></extra>',
+        )
+        traces.append(trace)
+        visibility.append([j == i for j in range(len(filters))])
+        buttons.append(dict(
+            label=label,
+            method="update",
+            args=[{"visible": visibility[-1]},
+                  {"title": f"{label} Commands by Frequency"}]
+        ))
+
+    fig = go.Figure(data=traces)
+
+    # Add dropdown menu
+    fig.update_layout(
+        updatemenus=[dict(
+            active=0,
+            buttons=buttons,
+            direction="down",
+            x=0.0,
+            xanchor="left",
+            y=1.15,
+            yanchor="top"
+        )],
+        title="Top 10 Commands by Frequency",
+        xaxis_title="Command",
+        yaxis_title="Frequency",
+        template="plotly_white",
+        showlegend=False,
+        margin=dict(t=80, b=80, l=60, r=30),
+        height=600
+    )
+
+    fig.update_xaxes(tickangle=-45)
+    fig.write_html("command_usage.html")
+    fig.show()
 
 #------------------------------ export_to_json ------------------------------
 #  Function export_to_json
