@@ -5,11 +5,24 @@ import json
 from collections import Counter
 import matplotlib.pyplot as plt
 
-#Configurable paths and settings
+# Configurable paths and settings
 HISTORY_FILES = [os.path.expanduser("~/.bash_history"), os.path.expanduser("~/.zsh_history")]
 LOG_FILES = ["/var/log/syslog", "/var/log/auth.log"]
 
-#Data Collection
+
+#---------------------------- read_shell_history ----------------------------
+#  Function read_shell_history
+#
+#  Purpose:  Reads shell history files (.bash_history, .zsh_history) to extract
+#      commands used by the user. It parses each line and extracts the
+#      first word (assumed to be the command).
+#
+#  Parameters:
+#      None
+#
+#  Returns:  A list of command strings (OUT) -- the commands extracted from the 
+#      user's shell history.
+#----------------------------------------------------------------------------
 def read_shell_history():
     commands = []
     for file_path in HISTORY_FILES:
@@ -21,6 +34,17 @@ def read_shell_history():
                         commands.append(command)
     return commands
 
+#---------------------------- read_process_logs -----------------------------
+#  Function read_process_logs
+#
+#  Purpose:  Uses `ps aux` to get currently running processes and extracts the
+#      command portion of each. This captures active commands at runtime.
+#
+#  Parameters:
+#      None
+#
+#  Returns:  A list of command names (OUT) -- names of running processes.
+#----------------------------------------------------------------------------
 def read_process_logs():
     commands = []
     try:
@@ -34,6 +58,17 @@ def read_process_logs():
         print(f"Failed to read process logs: {e}")
     return commands
 
+#----------------------------- parse_system_logs ----------------------------
+#  Function parse_system_logs
+#
+#  Purpose:  Parses system log files (e.g., syslog, auth.log) to extract command
+#      usage. Looks for the pattern 'COMMAND=' and captures the value.
+#
+#  Parameters:
+#      None
+#
+#  Returns:  A list of command names (OUT) -- commands found in the system logs.
+#----------------------------------------------------------------------------
 def parse_system_logs():
     commands = []
     for log_file in LOG_FILES:
@@ -46,6 +81,17 @@ def parse_system_logs():
                         commands.append(command)
     return commands
 
+#----------------------------- parse_audit_logs -----------------------------
+#  Function parse_audit_logs
+#
+#  Purpose:  Uses `ausearch` to extract EXECVE audit events and identifies the 
+#      command used. Useful on systems with auditd enabled for detailed tracking.
+#
+#  Parameters:
+#      None
+#
+#  Returns:  A list of command names (OUT) -- commands logged by audit framework.
+#----------------------------------------------------------------------------
 def parse_audit_logs():
     commands = []
     try:
@@ -59,18 +105,38 @@ def parse_audit_logs():
         print(f"Failed to parse audit logs: {e}")
     return commands
 
-#Processing
+#---------------------------- normalize_and_count ---------------------------
+#  Function normalize_and_count
+#
+#  Purpose:  Converts all collected command strings to lowercase and filters 
+#      non-alphabetic entries. Then counts the frequency of each unique command.
+#
+#  Parameters:
+#      commands (IN) -- A list of command strings to be normalized and counted.
+#
+#  Returns:  A Counter object (OUT) -- contains command frequencies.
+#----------------------------------------------------------------------------
 def normalize_and_count(commands):
     normalized = [cmd.lower() for cmd in commands if cmd.isalpha()]
     return Counter(normalized)
 
-#Visualization
+#-------------------------- visualize_command_usage -------------------------
+#  Function visualize_command_usage
+#
+#  Purpose:  Creates a bar chart of command usage frequencies from a Counter.
+#      Displays and saves the plot as an image.
+#
+#  Parameters:
+#      counter (IN) -- A Counter object containing command frequencies.
+#
+#  Returns:  None (Outputs plot as image file and shows the plot visually.)
+#----------------------------------------------------------------------------
 def visualize_command_usage(counter):
-    most_common = counter.most_common(10)
-    commands, counts = zip(*most_common)
-    plt.figure(figsize=(10, 6))
+    sorted_items = counter.most_common()
+    commands, counts = zip(*sorted_items)
+    plt.figure(figsize=(12, 6))
     plt.bar(commands, counts, color='skyblue')
-    plt.title("Top 10 Most Frequently Executed Commands")
+    plt.title("Command Usage Frequency")
     plt.xlabel("Command")
     plt.ylabel("Frequency")
     plt.xticks(rotation=45)
@@ -78,12 +144,22 @@ def visualize_command_usage(counter):
     plt.savefig("command_usage.png")
     plt.show()
 
-#Export
+#------------------------------ export_to_json ------------------------------
+#  Function export_to_json
+#
+#  Purpose:  Writes the command frequency data to a JSON file for later use
+#      or analysis by other tools or analysts.
+#
+#  Parameters:
+#      counter (IN) -- A Counter object containing command usage frequencies.
+#
+#  Returns:  None (Writes data to "command_usage.json".)
+#----------------------------------------------------------------------------
 def export_to_json(counter):
     with open("command_usage.json", "w") as f:
         json.dump(counter.most_common(), f, indent=4)
 
-#Main
+
 def main():
     print("\nCollecting command data...")
     commands = []
