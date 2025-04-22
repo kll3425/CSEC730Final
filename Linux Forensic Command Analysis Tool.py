@@ -168,18 +168,24 @@ def visualize_command_usage(counter):
     server = app.server
 
     app.layout = html.Div([
-        html.H2("Command Usage Frequency"),
+        html.H2("Command Usage Frequency", style={'textAlign': 'center', 'margin-bottom': '30px'}),
         dcc.Input(
             id='search-input',
             type='text',
             placeholder='Search for a command...',
             debounce=True,
-            style={'width': '50%', 'padding': '10px', 'margin-bottom': '20px'}
+            style={'width': '50%', 
+                   'padding': '10px', 
+                   'margin': 'auto',
+                   'display': 'block',
+                   'margin-bottom': '20px',
+                   'fontSize': '16px'
+            }
         ),
         dcc.Graph(id='bar-chart'),
         html.Button("Save Chart & Quit", id="save-quit-button", n_clicks=0,
-                    style={'margin-top': '20px', 'padding': '10px 20px'}),
-        html.Div(id="save-message", style={'margin-top': '10px', 'color': 'green'})
+                    style={'margin-top': '30px', 'padding': '12px 24px', 'fontSize': '16px'}),
+        html.Div(id="save-message", style={'margin-top': '15px', 'color': 'green', 'textAlign': 'center'})
     ], style={'padding': '40px', 'font-family': 'Arial, sans-serif'})
 
     # Store filtered data
@@ -197,11 +203,16 @@ def visualize_command_usage(counter):
             x='Command',
             y='Frequency',
             title="Command Usage Frequency",
-            labels={'Command': 'Command', 'Frequency': 'Frequency'},
+            labels={'Command': 'Command', 'Frequency': 'Usage Count'},
             template='plotly_white',
+            color='Frequency',
+            color_continuous_scale='Blues',
             height=600
         )
-        fig.update_layout(xaxis_tickangle=-45, margin=dict(t=80, b=80, l=60, r=30))
+
+        fig.update_layout(
+            xaxis_tickangle=-45, 
+            margin=dict(t=80, b=80, l=60, r=30))
         return fig
 
     @app.callback(
