@@ -188,29 +188,50 @@ def visualize_command_usage(counter):
 
     @app.callback(
         Output("save-message", "children"),
+        Output('bar-chart', 'style'),  # Hide chart after saving
         Input("save-quit-button", "n_clicks"),
         prevent_initial_call=True
     )
     def save_and_exit(n_clicks):
         if n_clicks > 0:
-            # Save current filtered chart
-            fig = px.bar(
-                filtered_df_store["data"],
-                x='Command',
-                y='Frequency',
-                title="Saved Command Usage"
-            )
-            fig.write_image("command_usage_saved.png")
-            # Notify
-            Timer(1, shutdown_server).start()
-            return "Chart saved as 'command_usage_saved.png'. Quitting..."
+            try:
+                # Save current filtered chart
+                fig = px.bar(
+                    filtered_df_store["data"],
+                    x='Command',
+                    y='Frequency',
+                    title="Saved Command Usage"
+                )
+                fig.write_image("command_usage_saved.png")
+                # Notify about save success
+                save_message = "Chart saved as 'command_usage_saved.png'. Quitting..."
+
+            except Exception as e:
+                save_message = f"Error saving chart: {str(e)}"
+                print(f"Error saving chart: {str(e)}")
+
+            try:
+                # Hide the chart and initiate shutdown
+                chart_style = {"display": "none"}
+                Timer(1, shutdown_server).start()
+            
+            except Exception as e:
+                save_message = f"Error shutting down server: {str(e)}"
+                print(f"Error shutting down server: {str(e)}")
+                chart_style = {}
+
+            return save_message, chart_style
 
     def shutdown_server():
-        os._exit(0)  # Force kill to ensure exit without error
+        try:
+            # Gracefully shut down the app
+            os._exit(0)  # Force kill to ensure exit without error
+        except Exception as e:
+            print(f"Error during server shutdown: {str(e)}")
 
     # Open browser automatically
     Timer(1, lambda: webbrowser.open("http://127.0.0.1:8050")).start()
-    app.run(debug=False, use_reloader=False)
+    app.run(debug=False, use_reloader=False)  # Disable reloader to prevent issues when exiting
 
 #------------------------------ export_to_json ------------------------------
 #  Function export_to_json
