@@ -5,6 +5,10 @@ import json
 from collections import Counter
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import dash
+from dash import dcc, html, Input, Output
+import plotly.express as px
+import pandas as pd
 
 # Configurable paths and settings
 HISTORY_FILES = [os.path.expanduser("~/.bash_history"), os.path.expanduser("~/.zsh_history")]
@@ -138,61 +142,49 @@ def visualize_command_usage(counter):
         print("No data to visualize.")
         return
 
-    # Prepare all filter levels
-    filters = {
-        "Top 10": data[:10],
-        "Top 25": data[:25],
-        "All": data
-    }
+    # Convert data to DataFrame for easier filtering and plotting
+    df = pd.DataFrame(data, columns=['Command', 'Frequency'])
 
-    # Create traces for each filter level
-    traces = []
-    visibility = []
-    buttons = []
+    # Initialize Dash app
+    app = dash.Dash(__name__)
+    app.title = "Command Usage Explorer"
 
-    for i, (label, subset) in enumerate(filters.items()):
-        cmds, freqs = zip(*subset)
-        trace = go.Bar(
-            x=cmds,
-            y=freqs,
-            name=label,
-            marker_color='lightskyblue',
-            hovertemplate='%{x}<br>Frequency: %{y}<extra></extra>',
-        )
-        traces.append(trace)
-        visibility.append([j == i for j in range(len(filters))])
-        buttons.append(dict(
-            label=label,
-            method="update",
-            args=[{"visible": visibility[-1]},
-                  {"title": f"{label} Commands by Frequency"}]
-        ))
+    app.layout = html.Div([
+        html.H2("Command Usage Frequency"),
+        dcc.Input(
+            id='search-input',
+            type='text',
+            placeholder='Search for a command...',
+            debounce=True,
+            style={'width': '50%', 'padding': '10px', 'margin-bottom': '20px'}
+        ),
+        dcc.Graph(id='bar-chart')
+    ], style={'padding': '40px', 'font-family': 'Arial, sans-serif'})
 
-    fig = go.Figure(data=traces)
-
-    # Add dropdown menu
-    fig.update_layout(
-        updatemenus=[dict(
-            active=0,
-            buttons=buttons,
-            direction="down",
-            x=0.0,
-            xanchor="left",
-            y=1.15,
-            yanchor="top"
-        )],
-        title="Top 10 Commands by Frequency",
-        xaxis_title="Command",
-        yaxis_title="Frequency",
-        template="plotly_white",
-        showlegend=False,
-        margin=dict(t=80, b=80, l=60, r=30),
-        height=600
+    @app.callback(
+        Output('bar-chart', 'figure'),
+        Input('search-input', 'value')
     )
+    def update_chart(search_query):
+        # Filter based on search input
+        if search_query:
+            filtered_df = df[df['Command'].str.contains(search_query, case=False)]
+        else:
+            filtered_df = df
 
-    fig.update_xaxes(tickangle=-45)
-    fig.write_html("command_usage.html")
-    fig.show()
+        fig = px.bar(
+            filtered_df,
+            x='Command',
+            y='Frequency',
+            title="Command Usage Frequency",
+            labels={'Command': 'Command', 'Frequency': 'Frequency'},
+            template='plotly_white',
+            height=600
+        )
+        fig.update_layout(xaxis_tickangle=-45, margin=dict(t=80, b=80, l=60, r=30))
+        return fig
+
+    app.run_server(debug=False)
 
 #------------------------------ export_to_json ------------------------------
 #  Function export_to_json
