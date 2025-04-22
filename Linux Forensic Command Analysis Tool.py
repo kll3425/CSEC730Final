@@ -3,12 +3,13 @@ import subprocess
 import re
 import json
 from collections import Counter
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import dash
-from dash import dcc, html, Input, Output
+from dash import dcc, html, Input, Output, State
 import plotly.express as px
 import pandas as pd
+from threading import Timer
+import webbrowser
+import flask
 
 # Configurable paths and settings
 HISTORY_FILES = [os.path.expanduser("~/.bash_history"), os.path.expanduser("~/.zsh_history")]
@@ -142,12 +143,11 @@ def visualize_command_usage(counter):
         print("No data to visualize.")
         return
 
-    # Convert data to DataFrame for easier filtering and plotting
     df = pd.DataFrame(data, columns=['Command', 'Frequency'])
 
-    # Initialize Dash app
+    # Dash app setup
     app = dash.Dash(__name__)
-    app.title = "Command Usage Explorer"
+    server = app.server  # needed to shut it down from within
 
     app.layout = html.Div([
         html.H2("Command Usage Frequency"),
@@ -158,7 +158,10 @@ def visualize_command_usage(counter):
             debounce=True,
             style={'width': '50%', 'padding': '10px', 'margin-bottom': '20px'}
         ),
-        dcc.Graph(id='bar-chart')
+        dcc.Graph(id='bar-chart'),
+        html.Button("Save Chart & Quit", id="save-quit-button", n_clicks=0,
+                    style={'margin-top': '20px', 'padding': '10px 20px'}),
+        html.Div(id="save-message", style={'margin-top': '10px', 'color': 'green'})
     ], style={'padding': '40px', 'font-family': 'Arial, sans-serif'})
 
     @app.callback(
@@ -166,12 +169,7 @@ def visualize_command_usage(counter):
         Input('search-input', 'value')
     )
     def update_chart(search_query):
-        # Filter based on search input
-        if search_query:
-            filtered_df = df[df['Command'].str.contains(search_query, case=False)]
-        else:
-            filtered_df = df
-
+        filtered_df = df[df['Command'].str.contains(search_query, case=False)] if search_query else df
         fig = px.bar(
             filtered_df,
             x='Command',
@@ -184,7 +182,28 @@ def visualize_command_usage(counter):
         fig.update_layout(xaxis_tickangle=-45, margin=dict(t=80, b=80, l=60, r=30))
         return fig
 
-    app.run_server(debug=False)
+    @app.callback(
+        Output("save-message", "children"),
+        Input("save-quit-button", "n_clicks"),
+        State("bar-chart", "figure"),
+        prevent_initial_call=True
+    )
+    def save_and_quit(n_clicks, figure):
+        if n_clicks:
+            fig = px.bar(pd.DataFrame(figure["data"][0]), x='x', y='y')
+            fig.write_image("command_usage_saved.png")
+            shutdown_server()
+            return "Chart saved as 'command_usage_saved.png'. Quitting..."
+
+    def shutdown_server():
+        func = flask.request.environ.get('werkzeug.server.shutdown')
+        if func:
+            func()
+
+    # Open the browser after short delay
+    Timer(1, lambda: webbrowser.open("http://127.0.0.1:8050")).start()
+
+    app.run(debug=False)
 
 #------------------------------ export_to_json ------------------------------
 #  Function export_to_json
