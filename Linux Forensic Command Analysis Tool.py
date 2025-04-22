@@ -1,16 +1,34 @@
+import subprocess
+import sys
+
+# Function to install missing dependencies
+def install_package(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+# List of required dependencies
+required_packages = [
+    "os", "subprocess", "re", "json", "collections", "dash", "plotly", "pandas", "kaleido"
+]
+
+# Check and install missing packages
+for package in required_packages:
+    try:
+        __import__(package)
+    except ImportError:
+        print(f"Package {package} not found. Installing...")
+        install_package(package)
+
 import os
 import subprocess
 import re
 import json
 from collections import Counter
 import dash
-from dash import dcc, html, Input, Output, State
+from dash import dcc, html, Input, Output
 import plotly.express as px
 import pandas as pd
 from threading import Timer
 import webbrowser
-import flask
-import os
 
 # Configurable paths and settings
 HISTORY_FILES = [os.path.expanduser("~/.bash_history"), os.path.expanduser("~/.zsh_history")]
@@ -130,13 +148,13 @@ def normalize_and_count(commands):
 #-------------------------- visualize_command_usage -------------------------
 #  Function visualize_command_usage
 #
-#  Purpose:  Creates an interactive bar chart of command usage frequencies using
-#      Plotly, with dropdown-based filtering for top 10, 25, or all commands.
+#  Purpose:  Launches a Dash app with search/filter and a "Save & Quit" button
+#      that exports the current chart to PNG, hides the chart, and exits the app.
 #
 #  Parameters:
 #      counter (IN) -- A Counter object containing command frequencies.
 #
-#  Returns:  None (Displays interactive chart in browser and saves as HTML.)
+#  Returns:  None (runs a local web server and auto-opens the dashboard)
 #----------------------------------------------------------------------------
 def visualize_command_usage(counter):
     data = counter.most_common()
@@ -204,7 +222,7 @@ def visualize_command_usage(counter):
                 )
                 fig.write_image("command_usage_saved.png")
                 # Notify about save success
-                save_message = "Chart saved as 'command_usage_saved.png'. Quitting..."
+                save_message = "Chart saved as 'command_usage_saved.png'. Close Window"
 
             except Exception as e:
                 save_message = f"Error saving chart: {str(e)}"
