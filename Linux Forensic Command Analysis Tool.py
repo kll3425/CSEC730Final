@@ -213,9 +213,7 @@ def visualize_command_usage(counter):
                    'font': dict(size=21)
                    },
             xaxis_title="<b>Command</b>",
-            xaxis_titlefont=dict(size=18),
             yaxis_title="<b>Frequency</b>",
-            yaxis_titlefont=dict(size=18),
             template='plotly_white',
             xaxis_tickangle=-45, 
             xaxis_tickfont=dict(size=12),
