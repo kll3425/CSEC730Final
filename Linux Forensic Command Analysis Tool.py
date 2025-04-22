@@ -10,6 +10,7 @@ import pandas as pd
 from threading import Timer
 import webbrowser
 import flask
+import os
 
 # Configurable paths and settings
 HISTORY_FILES = [os.path.expanduser("~/.bash_history"), os.path.expanduser("~/.zsh_history")]
@@ -145,9 +146,8 @@ def visualize_command_usage(counter):
 
     df = pd.DataFrame(data, columns=['Command', 'Frequency'])
 
-    # Dash app setup
     app = dash.Dash(__name__)
-    server = app.server  # needed to shut it down from within
+    server = app.server
 
     app.layout = html.Div([
         html.H2("Command Usage Frequency"),
@@ -164,14 +164,18 @@ def visualize_command_usage(counter):
         html.Div(id="save-message", style={'margin-top': '10px', 'color': 'green'})
     ], style={'padding': '40px', 'font-family': 'Arial, sans-serif'})
 
+    # Store filtered data
+    filtered_df_store = {"data": df}
+
     @app.callback(
         Output('bar-chart', 'figure'),
         Input('search-input', 'value')
     )
     def update_chart(search_query):
-        filtered_df = df[df['Command'].str.contains(search_query, case=False)] if search_query else df
+        filtered = df[df['Command'].str.contains(search_query, case=False)] if search_query else df
+        filtered_df_store["data"] = filtered  # Save for later use
         fig = px.bar(
-            filtered_df,
+            filtered,
             x='Command',
             y='Frequency',
             title="Command Usage Frequency",
@@ -185,25 +189,28 @@ def visualize_command_usage(counter):
     @app.callback(
         Output("save-message", "children"),
         Input("save-quit-button", "n_clicks"),
-        State("bar-chart", "figure"),
         prevent_initial_call=True
     )
-    def save_and_quit(n_clicks, figure):
-        if n_clicks:
-            fig = px.bar(pd.DataFrame(figure["data"][0]), x='x', y='y')
+    def save_and_exit(n_clicks):
+        if n_clicks > 0:
+            # Save current filtered chart
+            fig = px.bar(
+                filtered_df_store["data"],
+                x='Command',
+                y='Frequency',
+                title="Saved Command Usage"
+            )
             fig.write_image("command_usage_saved.png")
-            shutdown_server()
+            # Notify
+            Timer(1, shutdown_server).start()
             return "Chart saved as 'command_usage_saved.png'. Quitting..."
 
     def shutdown_server():
-        func = flask.request.environ.get('werkzeug.server.shutdown')
-        if func:
-            func()
+        os._exit(0)  # Force kill to ensure exit without error
 
-    # Open the browser after short delay
+    # Open browser automatically
     Timer(1, lambda: webbrowser.open("http://127.0.0.1:8050")).start()
-
-    app.run(debug=False)
+    app.run_server(debug=False, use_reloader=False)
 
 #------------------------------ export_to_json ------------------------------
 #  Function export_to_json
