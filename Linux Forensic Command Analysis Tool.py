@@ -210,7 +210,7 @@ def visualize_command_usage(counter):
 
     # Open browser automatically
     Timer(1, lambda: webbrowser.open("http://127.0.0.1:8050")).start()
-    app.run_server(debug=False, use_reloader=False)
+    app.run(debug=False, use_reloader=False)
 
 #------------------------------ export_to_json ------------------------------
 #  Function export_to_json
