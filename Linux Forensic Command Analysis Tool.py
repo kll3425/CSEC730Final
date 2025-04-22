@@ -168,24 +168,22 @@ def visualize_command_usage(counter):
     server = app.server
 
     app.layout = html.Div([
-        html.H2("Command Usage Frequency", style={'textAlign': 'center', 'margin-bottom': '30px'}),
+        html.H2("Command Usage Frequency", style={'fontWeight': 'bold', 'textAlign': 'center'}),
         dcc.Input(
             id='search-input',
             type='text',
             placeholder='Search for a command...',
             debounce=True,
-            style={'width': '50%', 
+            style={'width': '60%', 
                    'padding': '10px', 
-                   'margin': 'auto',
-                   'display': 'block',
-                   'margin-bottom': '20px',
-                   'fontSize': '16px'
+                   'margin': '20px auto',
+                   'display': 'block'
             }
         ),
         dcc.Graph(id='bar-chart'),
         html.Button("Save Chart & Quit", id="save-quit-button", n_clicks=0,
-                    style={'margin-top': '30px', 'padding': '12px 24px', 'fontSize': '16px'}),
-        html.Div(id="save-message", style={'margin-top': '15px', 'color': 'green', 'textAlign': 'center'})
+                    style={'margin-top': '30px', 'padding': '10px 20px', 'display': 'block', 'margin-left': 'auto', 'margin-right': 'auto'}),
+        html.Div(id="save-message", style={'margin-top': '10px', 'color': 'green', 'textAlign': 'center'})
     ], style={'padding': '40px', 'font-family': 'Arial, sans-serif'})
 
     # Store filtered data
@@ -203,15 +201,18 @@ def visualize_command_usage(counter):
             x='Command',
             y='Frequency',
             title="Command Usage Frequency",
-            labels={'Command': 'Command', 'Frequency': 'Usage Count'},
-            template='plotly_white',
-            color='Frequency',
-            color_continuous_scale='Blues',
+            labels={'Command': 'Command', 'Frequency': 'Frequency'},
             height=600
+            color_discrete_sequence=['#1f77b4']
         )
 
         fig.update_layout(
+            title={'text': "<b>Top Command Usage</b>", 'x': 0.5, 'xanchor': 'center'},
+            xaxis_title="<b>Command</b>",
+            yaxis_title="<b>Freuquency</b>",
+            template='plotly_white',
             xaxis_tickangle=-45, 
+            xaxis_tickfont=dict(size=10),
             margin=dict(t=80, b=80, l=60, r=30))
         return fig
 
