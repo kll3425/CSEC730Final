@@ -202,7 +202,7 @@ def visualize_command_usage(counter):
             y='Frequency',
             title="Command Usage Frequency",
             labels={'Command': 'Command', 'Frequency': 'Frequency'},
-            height=600
+            height=600,
             color_discrete_sequence=['#1f77b4']
         )
 
