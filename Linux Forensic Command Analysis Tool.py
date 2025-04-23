@@ -218,11 +218,11 @@ def visualize_command_usage(counter):
             xaxis_tickangle=-45, 
             xaxis=dict(
                 title_font=dict(size=18, family='Arial'),
-                tickfont=dict(size=14)
+                tickfont=dict(size=16)
             ),
             yaxis=dict(
                 title_font=dict(size=18, family='Arial'),
-                tickfont=dict(size=14)
+                tickfont=dict(size=16)
             ),
             margin=dict(t=40, b=80, l=60, r=30))
         return fig
