@@ -210,13 +210,13 @@ def visualize_command_usage(counter):
             title={'text': "<b>Top Command Usage</b>", 
                    'x': 0.5, 
                    'xanchor': 'center',
-                   'font': dict(size=21)
+                   'font': dict(size=23)
                    },
             xaxis_title="<b>Command</b>",
             yaxis_title="<b>Frequency</b>",
             template='plotly_white',
             xaxis_tickangle=-45, 
-            xaxis_tickfont=dict(size=12),
+            xaxis_tickfont=dict(size=14),
             margin=dict(t=40, b=80, l=60, r=30))
         return fig
 
