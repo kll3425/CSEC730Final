@@ -7,7 +7,7 @@ def install_package(package):
 
 # List of required dependencies
 required_packages = [
-    "os", "subprocess", "re", "json", "collections", "dash", "plotly", "pandas", "kaleido"
+    "os", "subprocess", "re", "json", "collections", "dash", "plotly", "pandas", "kaleido", "atexit", "argparse", "uuid"
 ]
 
 # Check and install missing packages
@@ -29,11 +29,13 @@ import plotly.express as px
 import pandas as pd
 from threading import Timer
 import webbrowser
+import argparse 
+import atexit 
+import uuid
 
 # Configurable paths and settings
 HISTORY_FILES = [os.path.expanduser("~/.bash_history"), os.path.expanduser("~/.zsh_history")]
 LOG_FILES = ["/var/log/syslog", "/var/log/auth.log"]
-
 
 #---------------------------- read_shell_history ----------------------------
 #  Function read_shell_history
@@ -289,8 +291,44 @@ def export_to_json(counter):
     with open("command_usage.json", "w") as f:
         json.dump(counter.most_common(), f, indent=4)
 
+def unmount(path):
+    print("Attempting to unmount image file")
+    try:
+        subprocess.run(['sudo', 'umount', path], check=True)
+        print(f"Image unmounted successfully from '{path}'")
+    except subprocess.CalledProcessError as e:
+        print(f"Error unmounting image: {e}")
 
 def main():
+    #DEBUG bypass
+    # Will run on main system
+    if os.getenv("DEBUG"):
+        ROOT = "/"
+    else:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("IMAGE_FILE_OR_MOUNT_PATH", type=str, help="Path to linux image file to mount or path to mounted linux image file (default mount is /tmp/{uuid})")
+        parser.add_argument("-m","--mount-to",type=str,help="Specify a custom path to mount the image file")
+        parser.add_argument("-p","--path-to-memdump",type=str,help="To perform active process analysis, path to memory dump file of system")
+        args = parser.parse_args()
+        print(args)
+        if not os.path.exists(args.IMAGE_FILE_OR_MOUNT_PATH):
+            print("Supplied IMAGE_FILE/MOUNT_PATH does not exist on system")
+            exit(1)
+        else:
+            if os.path.isdir(args.IMAGE_FILE_OR_MOUNT_PATH):
+                ROOT = args["IMAGE_FILE/MOUNT_PATH"]
+            elif os.path.isfile(args.IMAGE_FILE_OR_MOUNT_PATH):
+                ROOT = "/tmp/" + str(uuid.uuid4()) + "/"
+                os.mkdir(ROOT)
+                try:
+                    subprocess.run(["sudo", "mount", "-o", "ro,loop", args.IMAGE_FILE_OR_MOUNT_PATH, ROOT], check=True)
+                    atexit.register(unmount,ROOT)
+                except subprocess.CalledProcessError as e:
+                    print(f"Error mounting image: {e}")
+                except FileNotFoundError:
+                    print("Error: 'mount' command not found. Ensure it's in your system's PATH.")
+                print("Mounting image to " + ROOT)
+                
     print("\nCollecting command data...")
     commands = []
     commands += read_shell_history()
